@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../app_theme.dart';
 import '../providers/tv_provider.dart';
+import '../utils/responsive.dart';
 import '../widgets/channel_card.dart';
 import '../widgets/loading_shimmer.dart';
 import '../widgets/error_view.dart';
@@ -30,16 +31,19 @@ class _HomeScreenState extends State<HomeScreen> {
                   message: prov.errorMessage ?? 'Unknown error',
                   onRetry: prov.initialize);
             }
-            return _buildContent(prov);
+            return _buildContent(context, prov);
           },
         ),
       ),
     );
   }
 
-  Widget _buildContent(TvProvider prov) {
+  Widget _buildContent(BuildContext context, TvProvider prov) {
     final categories = ['All', ...prov.availableCategories];
     final channels = prov.filteredChannels;
+    final hp = Responsive.hPadding(context);
+    final cols = Responsive.gridCols(context);
+    final spacing = Responsive.gridSpacing(context);
 
     return CustomScrollView(
       slivers: [
@@ -80,7 +84,7 @@ class _HomeScreenState extends State<HomeScreen> {
           )
         else ...[
           SliverPadding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+            padding: EdgeInsets.fromLTRB(hp, 12, hp, 4),
             sliver: SliverToBoxAdapter(
               child: Text(
                 '${channels.length} channels',
@@ -90,13 +94,13 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           SliverPadding(
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+            padding: EdgeInsets.fromLTRB(hp, 4, hp, 24),
             sliver: SliverGrid(
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3,
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: cols,
                 childAspectRatio: 0.85,
-                crossAxisSpacing: 10,
-                mainAxisSpacing: 10,
+                crossAxisSpacing: spacing,
+                mainAxisSpacing: spacing,
               ),
               delegate: SliverChildBuilderDelegate(
                 (context, i) {
@@ -126,15 +130,15 @@ class _CategoryBar extends StatelessWidget {
   final List<String> categories;
   final TvProvider provider;
 
-  const _CategoryBar(
-      {required this.categories, required this.provider});
+  const _CategoryBar({required this.categories, required this.provider});
 
   @override
   Widget build(BuildContext context) {
+    final hp = Responsive.hPadding(context);
     return SizedBox(
       height: 48,
       child: ListView.separated(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: EdgeInsets.symmetric(horizontal: hp, vertical: 8),
         scrollDirection: Axis.horizontal,
         itemCount: categories.length,
         separatorBuilder: (_, __) => const SizedBox(width: 8),
