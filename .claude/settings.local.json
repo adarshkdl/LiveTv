@@ -14,7 +14,12 @@
       "Bash(printf:*)",
       "Bash(git credential:*)",
       "Bash(git remote set-url:*)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(New-Item -ItemType Directory -Force -Path \"d:/Flutter Projects/Live_TV/live_tv_app/assets/icon\")",
+      "Bash(Out-Null)",
+      "Bash(Write-Host \"dir ready\")",
+      "Bash(powershell.exe -NoProfile -Command:*)",
+      "Bash(dart run:*)"
     ]
   }
 }

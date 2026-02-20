@@ -110,19 +110,34 @@ class TvProvider extends ChangeNotifier {
       final countries = results[2] as List<Country>;
       final favList = results[3] as List<String>;
 
-      // Map first valid stream URL to each channel
-      final streamMap = <String, StreamModel>{};
+      // Collect ALL valid streams per channel, then sort best quality first.
+      const qualityOrder = [
+        '1080p', '720p', '576p', '480p', '360p', '240p'
+      ];
+      int qualityRank(String? q) {
+        if (q == null) return 999;
+        final i = qualityOrder.indexOf(q.toLowerCase());
+        return i == -1 ? 998 : i;
+      }
+
+      final streamMap = <String, List<StreamModel>>{};
       for (final s in streams) {
-        if (s.channelId != null && !streamMap.containsKey(s.channelId)) {
-          streamMap[s.channelId!] = s;
+        if (s.channelId != null && s.isValid) {
+          streamMap.putIfAbsent(s.channelId!, () => []).add(s);
         }
       }
+      for (final list in streamMap.values) {
+        list.sort((a, b) =>
+            qualityRank(a.quality).compareTo(qualityRank(b.quality)));
+      }
+
       for (final ch in channels) {
-        final s = streamMap[ch.id];
-        if (s != null) {
-          ch.streamUrl = s.url;
-          ch.userAgent = s.userAgent;
-          ch.referrer = s.referrer;
+        final list = streamMap[ch.id] ?? [];
+        ch.streams = list;
+        if (list.isNotEmpty) {
+          ch.streamUrl = list.first.url;
+          ch.userAgent = list.first.userAgent;
+          ch.referrer = list.first.referrer;
         }
       }
 

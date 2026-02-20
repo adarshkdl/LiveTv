@@ -25,6 +25,9 @@ class _PlayerScreenState extends State<PlayerScreen> {
   bool _hasError = false;
   String? _errorMsg;
 
+  // Quality selection — index into widget.channel.streams (sorted best→worst).
+  int _streamIndex = 0;
+
   @override
   void initState() {
     super.initState();
@@ -36,6 +39,26 @@ class _PlayerScreenState extends State<PlayerScreen> {
     _initPlayer();
   }
 
+  // Returns the stream to play based on selected index, falling back to the
+  // channel's default streamUrl when the streams list is empty.
+  String? get _activeUrl {
+    final s = widget.channel.streams;
+    if (s.isNotEmpty && _streamIndex < s.length) return s[_streamIndex].url;
+    return widget.channel.streamUrl;
+  }
+
+  String? get _activeUserAgent {
+    final s = widget.channel.streams;
+    if (s.isNotEmpty && _streamIndex < s.length) return s[_streamIndex].userAgent;
+    return widget.channel.userAgent;
+  }
+
+  String? get _activeReferrer {
+    final s = widget.channel.streams;
+    if (s.isNotEmpty && _streamIndex < s.length) return s[_streamIndex].referrer;
+    return widget.channel.referrer;
+  }
+
   Future<void> _initPlayer() async {
     setState(() {
       _isLoading = true;
@@ -45,7 +68,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
 
     _disposeControllers();
 
-    final url = widget.channel.streamUrl;
+    final url = _activeUrl;
     if (url == null || url.isEmpty) {
       setState(() {
         _isLoading = false;
@@ -57,11 +80,11 @@ class _PlayerScreenState extends State<PlayerScreen> {
 
     try {
       final headers = <String, String>{};
-      if (widget.channel.userAgent != null) {
-        headers['User-Agent'] = widget.channel.userAgent!;
+      if (_activeUserAgent != null) {
+        headers['User-Agent'] = _activeUserAgent!;
       }
-      if (widget.channel.referrer != null) {
-        headers['Referer'] = widget.channel.referrer!;
+      if (_activeReferrer != null) {
+        headers['Referer'] = _activeReferrer!;
       }
 
       _videoCtrl = VideoPlayerController.networkUrl(
@@ -225,7 +248,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
               ),
               const SizedBox(height: 14),
 
-              // Info chips
+              // Info chips + quality selector
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
@@ -241,6 +264,9 @@ class _PlayerScreenState extends State<PlayerScreen> {
                     (c) => _infoChip(
                         label: c[0].toUpperCase() + c.substring(1)),
                   ),
+                  // Quality selector — only shown when > 1 stream available
+                  if (widget.channel.streams.length > 1)
+                    _qualityChip(context),
                 ],
               ),
 
@@ -368,6 +394,128 @@ class _PlayerScreenState extends State<PlayerScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  // ── Quality selector chip + bottom sheet ──────────────────────────────────
+
+  String _qualityLabel(int index) {
+    final streams = widget.channel.streams;
+    if (index >= streams.length) return 'Auto';
+    final q = streams[index].quality;
+    return q != null && q.isNotEmpty ? q.toUpperCase() : 'Auto';
+  }
+
+  Widget _qualityChip(BuildContext context) {
+    return GestureDetector(
+      onTap: () => _showQualitySheet(context),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: AppTheme.accent.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: AppTheme.accent.withValues(alpha: 0.3)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.hd_rounded, size: 14, color: AppTheme.accent),
+            const SizedBox(width: 5),
+            Text(
+              _qualityLabel(_streamIndex),
+              style: const TextStyle(
+                color: AppTheme.accentLight,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(width: 4),
+            const Icon(Icons.expand_more_rounded,
+                size: 14, color: AppTheme.accent),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showQualitySheet(BuildContext context) {
+    final streams = widget.channel.streams;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppTheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (_) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Padding(
+                padding: EdgeInsets.fromLTRB(20, 16, 20, 8),
+                child: Text(
+                  'Select Quality',
+                  style: TextStyle(
+                    color: AppTheme.textPrimary,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              const Divider(color: AppTheme.cardBorder, height: 1),
+              ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: streams.length,
+                itemBuilder: (_, i) {
+                  final label = _qualityLabel(i);
+                  final isSelected = i == _streamIndex;
+                  return ListTile(
+                    leading: Icon(
+                      isSelected
+                          ? Icons.radio_button_checked_rounded
+                          : Icons.radio_button_off_rounded,
+                      color: isSelected
+                          ? AppTheme.accent
+                          : AppTheme.textMuted,
+                      size: 20,
+                    ),
+                    title: Text(
+                      label,
+                      style: TextStyle(
+                        color: isSelected
+                            ? AppTheme.accent
+                            : AppTheme.textPrimary,
+                        fontSize: 14,
+                        fontWeight: isSelected
+                            ? FontWeight.w600
+                            : FontWeight.w400,
+                      ),
+                    ),
+                    subtitle: Text(
+                      streams[i].title.isNotEmpty
+                          ? streams[i].title
+                          : streams[i].url,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                          color: AppTheme.textMuted, fontSize: 11),
+                    ),
+                    onTap: () {
+                      Navigator.pop(context);
+                      if (i != _streamIndex) {
+                        setState(() => _streamIndex = i);
+                        _initPlayer();
+                      }
+                    },
+                  );
+                },
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
