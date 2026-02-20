@@ -1,3 +1,5 @@
+import 'stream_model.dart';
+
 class Channel {
   final String id;
   final String name;
@@ -9,7 +11,10 @@ class Channel {
   final String? website;
   final List<String> languages;
 
-  // Set after matching with streams
+  // Set after matching with streams — all available streams, best quality first.
+  List<StreamModel> streams;
+
+  // Convenience shortcut to the currently active (best) stream.
   String? streamUrl;
   String? userAgent;
   String? referrer;
@@ -24,6 +29,7 @@ class Channel {
     this.logo,
     this.website,
     required this.languages,
+    this.streams = const [],
     this.streamUrl,
     this.userAgent,
     this.referrer,
