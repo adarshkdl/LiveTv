@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../app_theme.dart';
 import '../providers/tv_provider.dart';
+import '../utils/responsive.dart';
 import '../widgets/country_card.dart';
 import '../widgets/loading_shimmer.dart';
 import '../widgets/error_view.dart';
@@ -63,7 +64,9 @@ class _CountriesScreenState extends State<CountriesScreen> {
                   bottom: PreferredSize(
                     preferredSize: const Size.fromHeight(60),
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+                      padding: EdgeInsets.fromLTRB(
+                          Responsive.hPadding(context), 0,
+                          Responsive.hPadding(context), 10),
                       child: TextField(
                         controller: _searchCtrl,
                         style:
@@ -93,7 +96,9 @@ class _CountriesScreenState extends State<CountriesScreen> {
                   ),
                 ),
                 SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+                  padding: EdgeInsets.fromLTRB(
+                      Responsive.hPadding(context), 8,
+                      Responsive.hPadding(context), 4),
                   sliver: SliverToBoxAdapter(
                     child: Text(
                       _query.isEmpty
@@ -125,14 +130,16 @@ class _CountriesScreenState extends State<CountriesScreen> {
                   )
                 else
                   SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+                    padding: EdgeInsets.fromLTRB(
+                        Responsive.hPadding(context), 4,
+                        Responsive.hPadding(context), 24),
                     sliver: SliverGrid(
                       gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 3,
+                          SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: Responsive.gridCols(context),
                         childAspectRatio: 0.72,
-                        crossAxisSpacing: 10,
-                        mainAxisSpacing: 10,
+                        crossAxisSpacing: Responsive.gridSpacing(context),
+                        mainAxisSpacing: Responsive.gridSpacing(context),
                       ),
                       delegate: SliverChildBuilderDelegate(
                         (context, i) {
