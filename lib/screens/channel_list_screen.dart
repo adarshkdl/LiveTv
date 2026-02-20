@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../app_theme.dart';
 import '../providers/tv_provider.dart';
+import '../utils/responsive.dart';
 import '../widgets/channel_card.dart';
 import 'player_screen.dart';
 
@@ -21,6 +22,9 @@ class ChannelListScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final prov = context.watch<TvProvider>();
     final channels = prov.getChannelsForCountry(countryCode);
+    final hp = Responsive.hPadding(context);
+    final cols = Responsive.gridCols(context);
+    final spacing = Responsive.gridSpacing(context);
 
     return Scaffold(
       backgroundColor: AppTheme.bg,
@@ -54,7 +58,7 @@ class ChannelListScreen extends StatelessWidget {
               ),
             ),
             SliverPadding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+              padding: EdgeInsets.fromLTRB(hp, 8, hp, 4),
               sliver: SliverToBoxAdapter(
                 child: Text(
                   '${channels.length} channels',
@@ -74,14 +78,14 @@ class ChannelListScreen extends StatelessWidget {
               )
             else
               SliverPadding(
-                padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+                padding: EdgeInsets.fromLTRB(hp, 4, hp, 24),
                 sliver: SliverGrid(
                   gridDelegate:
-                      const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 3,
+                      SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: cols,
                     childAspectRatio: 0.85,
-                    crossAxisSpacing: 10,
-                    mainAxisSpacing: 10,
+                    crossAxisSpacing: spacing,
+                    mainAxisSpacing: spacing,
                   ),
                   delegate: SliverChildBuilderDelegate(
                     (context, i) {

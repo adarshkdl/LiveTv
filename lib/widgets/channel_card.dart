@@ -3,7 +3,12 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../app_theme.dart';
 import '../models/channel.dart';
 
-class ChannelCard extends StatelessWidget {
+/// A channel card that works across touch (phone/tablet) and
+/// D-pad (Smart TV / Android TV) input.
+///
+/// When the card gains keyboard/D-pad focus an accent border + glow
+/// animates in, and pressing SELECT / Enter triggers [onTap].
+class ChannelCard extends StatefulWidget {
   final Channel channel;
   final bool isFavorite;
   final VoidCallback onTap;
@@ -18,80 +23,124 @@ class ChannelCard extends StatelessWidget {
   });
 
   @override
+  State<ChannelCard> createState() => _ChannelCardState();
+}
+
+class _ChannelCardState extends State<ChannelCard> {
+  bool _focused = false;
+
+  @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
+    return Focus(
+      onFocusChange: (v) => setState(() => _focused = v),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        curve: Curves.easeOut,
         decoration: BoxDecoration(
           color: AppTheme.card,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppTheme.cardBorder, width: 0.5),
+          border: Border.all(
+            color: _focused ? AppTheme.accent : AppTheme.cardBorder,
+            width: _focused ? 2.5 : 0.5,
+          ),
+          boxShadow: _focused
+              ? [
+                  BoxShadow(
+                    color: AppTheme.accent.withValues(alpha: 0.45),
+                    blurRadius: 18,
+                    spreadRadius: 0,
+                  ),
+                ]
+              : const [],
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(
-              child: Stack(
+        // ClipRRect so InkWell ripple stays inside the rounded card
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(11),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              // InkWell handles: tap (touch), click (mouse),
+              // Enter / D-pad-Select (TV remote)
+              onTap: widget.onTap,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  _buildLogo(),
-                  Positioned(
-                    top: 6,
-                    right: 6,
-                    child: GestureDetector(
-                      onTap: onFavoriteTap,
-                      child: Container(
-                        width: 28,
-                        height: 28,
-                        decoration: BoxDecoration(
-                          color: Colors.black54,
-                          borderRadius: BorderRadius.circular(6),
+                  // ── Logo area ──────────────────────────────────────────
+                  Expanded(
+                    child: Stack(
+                      children: [
+                        _buildLogo(),
+
+                        // Favourite button
+                        Positioned(
+                          top: 6,
+                          right: 6,
+                          child: GestureDetector(
+                            onTap: widget.onFavoriteTap,
+                            child: Container(
+                              width: 28,
+                              height: 28,
+                              decoration: BoxDecoration(
+                                color: Colors.black54,
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Icon(
+                                widget.isFavorite
+                                    ? Icons.favorite
+                                    : Icons.favorite_border,
+                                size: 15,
+                                color: widget.isFavorite
+                                    ? AppTheme.live
+                                    : Colors.white70,
+                              ),
+                            ),
+                          ),
                         ),
-                        child: Icon(
-                          isFavorite ? Icons.favorite : Icons.favorite_border,
-                          size: 15,
-                          color: isFavorite ? AppTheme.live : Colors.white70,
+
+                        // LIVE badge
+                        Positioned(
+                          top: 6,
+                          left: 6,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AppTheme.live,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: const Text(
+                              'LIVE',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 9,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ),
                         ),
-                      ),
+                      ],
                     ),
                   ),
-                  Positioned(
-                    top: 6,
-                    left: 6,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: AppTheme.live,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: const Text(
-                        'LIVE',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 9,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.5,
-                        ),
+
+                  // ── Channel name ───────────────────────────────────────
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(8, 6, 8, 8),
+                    child: Text(
+                      widget.channel.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: AppTheme.textPrimary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
                 ],
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(8, 6, 8, 8),
-              child: Text(
-                channel.name,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: AppTheme.textPrimary,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -99,12 +148,12 @@ class ChannelCard extends StatelessWidget {
 
   Widget _buildLogo() {
     return ClipRRect(
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(11)),
       child: Container(
         color: AppTheme.surface,
-        child: channel.logo != null && channel.logo!.isNotEmpty
+        child: widget.channel.logo != null && widget.channel.logo!.isNotEmpty
             ? CachedNetworkImage(
-                imageUrl: channel.logo!,
+                imageUrl: widget.channel.logo!,
                 fit: BoxFit.contain,
                 placeholder: (_, __) => _initials(),
                 errorWidget: (_, __, ___) => _initials(),
@@ -115,12 +164,12 @@ class ChannelCard extends StatelessWidget {
   }
 
   Widget _initials() {
-    final letters = channel.name.isNotEmpty
-        ? channel.name.trim()[0].toUpperCase()
+    final letter = widget.channel.name.isNotEmpty
+        ? widget.channel.name.trim()[0].toUpperCase()
         : '?';
     return Center(
       child: Text(
-        letters,
+        letter,
         style: const TextStyle(
           color: AppTheme.textMuted,
           fontSize: 28,
